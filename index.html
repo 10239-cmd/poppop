@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมลูกโป่งฝึกสมาธิ - Focus Balloons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@500;700&family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pastelBg: '#FFF0F5',
+                        pastelCard: '#FFF8DC',
+                        pastelPink: '#FFB6C1',
+                        pastelBlue: '#AEC6CF',
+                        pastelPurple: '#C3B1E1',
+                        pastelYellow: '#FDFD96'
+                    },
+                    fontFamily: {
+                        sans: ['Mitr', 'Fredoka', 'sans-serif'],
+                        cute: ['Fredoka', 'Mitr', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Mitr', sans-serif;
+            background: linear-gradient(135deg, #ffe6f0 0%, #e8f4f8 50%, #f3e8ff 100%);
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            overflow: hidden;
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(3deg); }
+        }
+
+        @keyframes floatBalloon {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-12px) scale(1.02); }
+        }
+
+        @keyframes popAnimation {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.35); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        .floating-cloud {
+            animation: floatSlow 6s ease-in-out infinite;
+        }
+
+        .balloon-float {
+            animation: floatBalloon 2.8s ease-in-out infinite;
+        }
+
+        .pop-out {
+            animation: popAnimation 0.22s forwards ease-out;
+        }
+
+        .shake-screen {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Large Cute Balloon Style */
+        .balloon-body {
+            position: relative;
+            width: 115px;
+            height: 145px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.12), inset 12px 12px 18px rgba(255,255,255,0.7), 0 12px 22px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @media (min-width: 640px) {
+            .balloon-body {
+                width: 150px;
+                height: 185px;
+            }
+        }
+
+        .balloon-body:active {
+            transform: scale(0.92);
+        }
+
+        .balloon-body::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-bottom: 13px solid currentColor;
+            filter: brightness(0.85);
+        }
+
+        .balloon-string {
+            position: absolute;
+            bottom: -55px;
+            left: 50%;
+            width: 3px;
+            height: 48px;
+            background: rgba(130, 130, 130, 0.35);
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        .balloon-shine {
+            position: absolute;
+            top: 14%;
+            left: 18%;
+            width: 22%;
+            height: 32%;
+            background: rgba(255, 255, 255, 0.65);
+            border-radius: 50%;
+            transform: rotate(-30deg);
+        }
+
+        /* Particles for Balloon Pop */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: particleFade 0.55s forwards ease-out;
+        }
+
+        @keyframes particleFade {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        /* Text outline effect inside balloon for contrast */
+        .text-stroke-strong {
+            text-shadow: 
+                -2px -2px 0 #fff,  
+                 2px -2px 0 #fff,
+                -2px  2px 0 #fff,
+                 2px  2px 0 #fff,
+                 0px  3px 6px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between h-screen p-4 max-w-md md:max-w-xl mx-auto relative overflow-hidden">
+
+    <div class="absolute top-6 left-4 opacity-40 floating-cloud pointer-events-none">
+        <i class="fa-solid fa-cloud text-white text-6xl"></i>
+    </div>
+    <div class="absolute top-20 right-6 opacity-40 floating-cloud pointer-events-none" style="animation-delay: -2s;">
+        <i class="fa-solid fa-cloud text-white text-7xl"></i>
+    </div>
+    <div class="absolute bottom-12 left-10 opacity-30 floating-cloud pointer-events-none" style="animation-delay: -4s;">
+        <i class="fa-solid fa-cloud text-white text-5xl"></i>
+    </div>
+
+    <div id="start-screen" class="flex-1 flex flex-col justify-center items-center text-center z-10 my-auto">
+        <div class="bg-white/85 backdrop-blur-md p-8 rounded-3xl shadow-2xl border-4 border-pink-200 w-full relative">
+            <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-pink-400 text-white p-4 rounded-full shadow-lg border-4 border-white">
+                <i class="fa-solid fa-balloon text-4xl"></i>
+            </div>
+
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-pink-500 mt-6 mb-2 tracking-wide font-cute">
+                ลูกโป่งฝึกสมาธิ 🎈
+            </h1>
+            <p class="text-gray-600 text-sm sm:text-base mb-6 font-medium">
+                เกมฝึกสมอง โฟกัสสายตาและความไว!
+            </p>
+
+            <div class="bg-pink-50 p-4 rounded-2xl text-left mb-6 text-xs sm:text-sm text-gray-700 border border-pink-100 space-y-2">
+                <p class="font-bold text-pink-600 flex items-center gap-1.5 text-base">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i> กติกาการเล่น:
+                </p>
+                <ul class="list-disc list-inside space-y-1.5 pl-1 leading-relaxed">
+                    <li>ระบบจะให้โจทย์ <span class="font-extrabold text-pink-500 text-base">"TAP สี..."</span></li>
+                    <li>ต้องกดลูกโป่งที่มี <span class="font-extrabold text-purple-600 text-base">"สีลูกโป่ง"</span> ตรงตามโจทย์</li>
+                    <li>⚠️ <span class="text-red-500 font-bold">ข้อควรระวัง:</span> ห้ามกดตามตัวหนังสือ! ตัวหนังสือในลูกโป่งเป็นสีหลอกตา</li>
+                    <li>⏱️ มีเวลาตอบเพียง <span class="font-bold text-amber-500">5 วินาที</span> ในแต่ละข้อ</li>
+                </ul>
+            </div>
+
+            <div class="flex justify-around items-center mb-6 bg-purple-50 p-3.5 rounded-2xl border border-purple-100">
+                <div class="text-center">
+                    <span class="block text-xs text-purple-400 font-bold">คะแนนสูงสุด</span>
+                    <span id="start-high-score" class="text-3xl font-extrabold text-purple-600">0</span>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform active:scale-95 transition text-xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-play"></i> เริ่มเกมเลย!
+            </button>
+        </div>
+    </div>
+
+    <div id="game-ui" class="hidden flex-col h-full justify-between z-10">
+        <!-- Top Stats Bar -->
+        <div>
+            <div class="flex justify-between items-center bg-white/85 backdrop-blur-md px-5 py-3 rounded-2xl shadow-md mb-3 border-2 border-white">
+                <div class="flex items-center gap-2">
+                    <div class="bg-pink-100 p-2 rounded-xl text-pink-500">
+                        <i class="fa-solid fa-trophy text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">SCORE</div>
+                        <div id="score-display" class="text-2xl font-extrabold text-gray-700 leading-none">0</div>
+                    </div>
+                </div>
+
+                <div class="bg-purple-100 px-4 py-1.5 rounded-full border border-purple-200 shadow-sm">
+                    <span class="text-xs font-bold text-purple-600">LEVEL <span id="level-display" class="text-sm font-extrabold">1</span></span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <div class="text-right">
+                        <div class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">BEST</div>
+                        <div id="high-score-display" class="text-2xl font-extrabold text-purple-500 leading-none">0</div>
+                    </div>
+                    <div class="bg-purple-100 p-2 rounded-xl text-purple-500">
+                        <i class="fa-solid fa-star text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="w-full bg-white/60 rounded-full h-4 p-0.5 shadow-inner border border-white">
+                <div id="timer-bar" class="bg-gradient-to-r from-emerald-400 to-green-500 h-full rounded-full transition-all duration-100 ease-linear" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Big Prominent Target Prompt Box -->
+        <div class="my-auto py-2 text-center">
+            <div id="prompt-box" class="inline-block bg-white/95 backdrop-blur-md px-10 py-5 rounded-3xl shadow-xl border-4 border-pink-300 transform transition-transform">
+                <span class="text-base font-bold text-gray-400 block mb-1">จิ้มลูกโป่งที่มีสีนี้!</span>
+                <div class="text-3xl sm:text-5xl font-black text-gray-800 tracking-wide flex items-center justify-center gap-2">
+                    TAP <span id="target-color-text" class="text-pink-500 underline decoration-pink-300 underline-offset-8">สีแดง</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balloon Container Area -->
+        <div id="balloons-container" class="flex justify-around items-end pb-12 pt-6 min-h-[240px] sm:min-h-[290px] relative">
+            <!-- Balloons injected dynamically -->
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl border-4 border-pink-200 transform scale-95 transition-transform relative">
+            
+            <div id="new-high-score-badge" class="hidden absolute -top-4 right-4 bg-amber-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg border-2 border-white animate-pulse">
+                🎉 สถิติใหม่!
+            </div>
+
+            <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-pink-200 text-pink-400 text-4xl">
+                <i id="game-over-icon" class="fa-solid fa-heart-crack"></i>
+            </div>
+
+            <h2 id="game-over-title" class="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 font-cute">หมดเวลาแล้ว!</h2>
+            <p id="game-over-reason" class="text-sm text-gray-500 mb-6">คุณตอบช้าเกินไปน้า ลองใหม่อีกครั้ง!</p>
+
+            <div class="bg-gray-50 rounded-2xl p-4 mb-6 space-y-3 border border-gray-100">
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500 text-sm font-medium">คะแนนที่ได้</span>
+                    <span id="final-score" class="text-3xl font-black text-pink-500">0</span>
+                </div>
+                <div class="h-px bg-gray-200"></div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-500 text-sm font-medium">สถิติสูงสุด</span>
+                    <span id="final-high-score" class="text-2xl font-extrabold text-purple-600">0</span>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-xl transform active:scale-95 transition text-lg flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> เล่นอีกครั้ง
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Color Palette Definitions with exact matching Font Color for Text
+        const COLOR_PALETTE = [
+            { id: 'red', name: 'สีแดง', hex: '#FF5252', textFontColor: '#E53935' },
+            { id: 'blue', name: 'สีฟ้า', hex: '#3B82F6', textFontColor: '#1D4ED8' },
+            { id: 'green', name: 'สีเขียว', hex: '#22C55E', textFontColor: '#15803D' },
+            { id: 'yellow', name: 'สีเหลือง', hex: '#FACC15', textFontColor: '#D97706' },
+            { id: 'purple', name: 'สีม่วง', hex: '#A855F7', textFontColor: '#7E22CE' },
+            { id: 'orange', name: 'สีส้ม', hex: '#FF7A00', textFontColor: '#C2410C' },
+            { id: 'pink', name: 'สีชมพู', hex: '#EC4899', textFontColor: '#BE185D' }
+        ];
+
+        // Web Audio API Sound Effects
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playPopSound() {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.08);
+                
+                gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            } catch (e) {}
+        }
+
+        function playWrongSound() {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.25);
+                
+                gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+            } catch (e) {}
+        }
+
+        // Game State Variables
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('balloon_game_highscore')) || 0;
+        let level = 1;
+        let targetColorObj = null;
+        let timerInterval = null;
+        let timeRemaining = 5.0;
+        const TOTAL_TIME = 5.0;
+        let isGameActive = false;
+
+        // DOM Elements
+        const startScreen = document.getElementById('start-screen');
+        const gameUI = document.getElementById('game-ui');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const scoreDisplay = document.getElementById('score-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const startHighScore = document.getElementById('start-high-score');
+        const levelDisplay = document.getElementById('level-display');
+        const targetColorText = document.getElementById('target-color-text');
+        const timerBar = document.getElementById('timer-bar');
+        const balloonsContainer = document.getElementById('balloons-container');
+
+        startHighScore.textContent = highScore;
+        highScoreDisplay.textContent = highScore;
+
+        function startGame() {
+            initAudio();
+            score = 0;
+            level = 1;
+            isGameActive = true;
+
+            scoreDisplay.textContent = score;
+            highScoreDisplay.textContent = highScore;
+            levelDisplay.textContent = level;
+
+            startScreen.classList.add('hidden');
+            gameOverModal.classList.add('hidden');
+            gameUI.classList.remove('hidden');
+            gameUI.classList.add('flex');
+
+            nextRound();
+        }
+
+        function nextRound() {
+            if (!isGameActive) return;
+
+            level = Math.floor(score / 5) + 1;
+            levelDisplay.textContent = level;
+
+            // Pick 2 Different Colors: Target Color and Distractor Color
+            const shuffledPalette = [...COLOR_PALETTE].sort(() => Math.random() - 0.5);
+            targetColorObj = shuffledPalette[0];
+            const otherColorObj = shuffledPalette[1];
+
+            // Set Prompt Text
+            targetColorText.textContent = targetColorObj.name;
+            targetColorText.style.color = targetColorObj.textFontColor;
+
+            balloonsContainer.innerHTML = '';
+
+            // 3 Balloons: 2 Distractor Colors, 1 Target Color
+            let balloonColors = [otherColorObj, otherColorObj, targetColorObj];
+            balloonColors.sort(() => Math.random() - 0.5);
+
+            // Determine Stroop condition based on level
+            const useStroop = level >= 3 || (level === 2 && Math.random() > 0.4);
+
+            balloonColors.forEach((balloonColorObj, index) => {
+                let colorToDescribeObj = balloonColorObj; // default text matches balloon color
+
+                if (useStroop) {
+                    // Pick a random label color object that differs from actual balloon color
+                    const shouldTrick = Math.random() > 0.25;
+                    if (shouldTrick) {
+                        const randomDiff = COLOR_PALETTE.find(c => c.id !== balloonColorObj.id);
+                        if (randomDiff) {
+                            colorToDescribeObj = randomDiff;
+                        }
+                    }
+                }
+
+                createBalloon(balloonColorObj, colorToDescribeObj, index);
+            });
+
+            startTimer();
+        }
+
+        function createBalloon(balloonColorObj, colorToDescribeObj, index) {
+            const balloonWrapper = document.createElement('div');
+            balloonWrapper.className = 'relative flex flex-col items-center balloon-float';
+            balloonWrapper.style.animationDelay = `${index * -0.7}s`;
+
+            const balloon = document.createElement('div');
+            balloon.className = 'balloon-body select-none';
+            balloon.style.backgroundColor = balloonColorObj.hex;
+            balloon.style.color = balloonColorObj.hex; // For knot tail color
+
+            const shine = document.createElement('div');
+            shine.className = 'balloon-shine';
+
+            // BIG BOLD TEXT inside balloon with color matching the TEXT LABEL itself!
+            const textSpan = document.createElement('span');
+            textSpan.className = 'font-black text-lg sm:text-2xl px-1 text-center pointer-events-none tracking-tight text-stroke-strong';
+            textSpan.style.color = colorToDescribeObj.textFontColor; // Font color matches the written word!
+            textSpan.textContent = colorToDescribeObj.name;
+
+            const string = document.createElement('div');
+            string.className = 'balloon-string';
+
+            balloon.appendChild(shine);
+            balloon.appendChild(textSpan);
+            balloon.appendChild(string);
+            balloonWrapper.appendChild(balloon);
+
+            balloon.addEventListener('click', (e) => handleBalloonClick(e, balloonColorObj, balloonWrapper));
+
+            balloonsContainer.appendChild(balloonWrapper);
+        }
+
+        function handleBalloonClick(event, clickedColorObj, wrapperElement) {
+            if (!isGameActive) return;
+
+            if (clickedColorObj.id === targetColorObj.id) {
+                // Correct Balloon Tapped!
+                playPopSound();
+                score++;
+                scoreDisplay.textContent = score;
+
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('balloon_game_highscore', highScore);
+                    highScoreDisplay.textContent = highScore;
+                }
+
+                createPopEffect(event.clientX, event.clientY, clickedColorObj.hex);
+                wrapperElement.classList.add('pop-out');
+
+                clearInterval(timerInterval);
+                setTimeout(nextRound, 180);
+            } else {
+                // Wrong Balloon Tapped!
+                playWrongSound();
+                endGame('กดผิดลูกน้า! ต้องดูสีของลูกโป่ง ห้ามดูตัวหนังสือ');
+            }
+        }
+
+        function createPopEffect(x, y, colorHex) {
+            const particleCount = 14;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.backgroundColor = colorHex;
+                
+                const size = Math.random() * 9 + 6;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+
+                const angle = (Math.PI * 2 * i) / particleCount;
+                const distance = Math.random() * 55 + 30;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+
+                particle.style.setProperty('--dx', `${dx}px`);
+                particle.style.setProperty('--dy', `${dy}px`);
+
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 550);
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeRemaining = TOTAL_TIME;
+            updateTimerBar();
+
+            const intervalMs = 50;
+            timerInterval = setInterval(() => {
+                timeRemaining -= intervalMs / 1000;
+                updateTimerBar();
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    playWrongSound();
+                    endGame('หมดเวลา 5 วินาทีแล้ว! เร่งมืออีกนิดนะ');
+                }
+            }, intervalMs);
+        }
+
+        function updateTimerBar() {
+            const percentage = Math.max(0, (timeRemaining / TOTAL_TIME) * 100);
+            timerBar.style.width = `${percentage}%`;
+
+            if (percentage < 30) {
+                timerBar.className = 'bg-gradient-to-r from-red-400 to-rose-500 h-full rounded-full transition-all duration-100 ease-linear';
+            } else if (percentage < 60) {
+                timerBar.className = 'bg-gradient-to-r from-amber-400 to-yellow-500 h-full rounded-full transition-all duration-100 ease-linear';
+            } else {
+                timerBar.className = 'bg-gradient-to-r from-emerald-400 to-green-500 h-full rounded-full transition-all duration-100 ease-linear';
+            }
+        }
+
+        function endGame(reason) {
+            isGameActive = false;
+            clearInterval(timerInterval);
+
+            gameUI.classList.add('shake-screen');
+            setTimeout(() => gameUI.classList.remove('shake-screen'), 400);
+
+            const isNewHighScore = score > 0 && score >= highScore;
+            const finalScoreEl = document.getElementById('final-score');
+            const finalHighScoreEl = document.getElementById('final-high-score');
+            const gameOverReasonEl = document.getElementById('game-over-reason');
+            const gameOverTitleEl = document.getElementById('game-over-title');
+            const newHighScoreBadge = document.getElementById('new-high-score-badge');
+            const gameOverIcon = document.getElementById('game-over-icon');
+
+            finalScoreEl.textContent = score;
+            finalHighScoreEl.textContent = highScore;
+            gameOverReasonEl.textContent = reason;
+
+            if (isNewHighScore) {
+                newHighScoreBadge.classList.remove('hidden');
+                gameOverTitleEl.textContent = 'เก่งมาก สถิติใหม่! 🏆';
+                gameOverIcon.className = 'fa-solid fa-crown text-amber-400';
+                
+                try {
+                    confetti({
+                        particleCount: 90,
+                        spread: 65,
+                        origin: { y: 0.6 }
+                    });
+                } catch(e) {}
+            } else {
+                newHighScoreBadge.classList.add('hidden');
+                gameOverTitleEl.textContent = 'จบเกมแล้ว!';
+                gameOverIcon.className = 'fa-solid fa-heart-crack text-pink-400';
+            }
+
+            setTimeout(() => {
+                gameOverModal.classList.remove('hidden');
+            }, 300);
+        }
+    </script>
+</body>
+</html>
